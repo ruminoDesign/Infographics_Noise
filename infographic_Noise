@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>소음원과 데시벨</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=DM+Mono:wght@400;500&display=swap');
+
+- { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+background: #f4f4f0;
+font-family: ‘Noto Sans KR’, sans-serif;
+display: flex;
+justify-content: center;
+align-items: flex-start;
+min-height: 100vh;
+padding: 40px 20px;
+}
+
+.container {
+width: 700px;
+background: #ffffff;
+border-radius: 20px;
+padding: 48px 40px;
+border: 1px solid #e8e8e4;
+box-shadow: 0 4px 40px rgba(0,0,0,0.07);
+position: relative;
+overflow: hidden;
+}
+
+/* Header */
+.header { margin-bottom: 32px; }
+.label-top {
+font-family: ‘DM Mono’, monospace;
+font-size: 11px;
+letter-spacing: 3px;
+color: #e03030;
+text-transform: uppercase;
+margin-bottom: 10px;
+}
+.title {
+font-size: 26px;
+font-weight: 900;
+color: #1a1a1a;
+line-height: 1.2;
+letter-spacing: -0.5px;
+}
+.title span { color: #e03030; }
+.subtitle {
+font-size: 12px;
+color: #999;
+margin-top: 8px;
+font-weight: 300;
+letter-spacing: 0.3px;
+}
+
+/* X axis */
+.x-axis {
+display: flex;
+justify-content: space-between;
+padding: 0 0 10px 185px;
+margin-bottom: 2px;
+position: relative;
+}
+.x-axis::after {
+content: ‘’;
+position: absolute;
+bottom: 0; left: 185px; right: 0;
+height: 1px;
+background: #e0e0da;
+}
+.x-tick {
+font-family: ‘DM Mono’, monospace;
+font-size: 10px;
+color: #bbb;
+text-align: center;
+width: 36px;
+}
+
+/* Chart */
+.chart-wrapper { position: relative; }
+
+.grid-lines {
+position: absolute;
+top: 0; bottom: 0;
+left: 185px; right: 0;
+display: flex;
+justify-content: space-between;
+pointer-events: none;
+z-index: 0;
+}
+.grid-line {
+width: 1px;
+background: #f0f0eb;
+}
+
+/* WHO overlay */
+.who-overlay {
+position: absolute;
+top: 0; bottom: 0;
+display: flex;
+flex-direction: column;
+align-items: center;
+pointer-events: none;
+z-index: 5;
+}
+.who-tag {
+background: #e8f8f6;
+border: 1px solid #4ecdc4;
+color: #1a9e96;
+font-size: 9px;
+font-family: ‘DM Mono’, monospace;
+padding: 3px 7px;
+border-radius: 4px;
+white-space: nowrap;
+margin-bottom: 4px;
+}
+.who-line-v {
+width: 1px;
+flex: 1;
+background: repeating-linear-gradient(
+to bottom,
+#4ecdc4 0px, #4ecdc4 4px,
+transparent 4px, transparent 8px
+);
+}
+
+/* Section dividers */
+.section-divider {
+display: flex;
+align-items: center;
+margin: 10px 0 5px;
+gap: 10px;
+}
+.divider-label {
+font-size: 9px;
+letter-spacing: 1.5px;
+text-transform: uppercase;
+font-family: ‘DM Mono’, monospace;
+white-space: nowrap;
+padding: 3px 10px;
+border-radius: 20px;
+font-weight: 500;
+}
+.divider-line { flex: 1; height: 1px; }
+
+.zone-safe .divider-label    { color: #1a9e96; background: #e8f8f6; border: 1px solid #b2e8e4; }
+.zone-safe .divider-line     { background: #d0f0ee; }
+.zone-caution .divider-label { color: #b08800; background: #fffae8; border: 1px solid #ffe599; }
+.zone-caution .divider-line  { background: #fff0b0; }
+.zone-danger .divider-label  { color: #c04800; background: #fff2eb; border: 1px solid #ffb888; }
+.zone-danger .divider-line   { background: #ffdcc8; }
+.zone-critical .divider-label{ color: #b00030; background: #ffebf0; border: 1px solid #ffaab8; }
+.zone-critical .divider-line { background: #ffccd8; }
+
+/* Row */
+.row {
+display: flex;
+align-items: center;
+padding: 4px 0;
+position: relative;
+z-index: 1;
+}
+
+/* Source */
+.source {
+width: 180px;
+min-width: 180px;
+text-align: right;
+padding-right: 14px;
+display: flex;
+align-items: center;
+justify-content: flex-end;
+gap: 8px;
+}
+.source-icon { font-size: 15px; line-height: 1; flex-shrink: 0; }
+.source-text { text-align: right; }
+.source-name { font-size: 12px; font-weight: 500; color: #2a2a2a; line-height: 1.3; }
+.source-db   { font-family: ‘DM Mono’, monospace; font-size: 10px; color: #aaa; line-height: 1; margin-top: 1px; }
+
+/* Bar */
+.bar-track {
+flex: 1;
+height: 26px;
+background: #f7f7f4;
+border-radius: 5px;
+overflow: hidden;
+border: 1px solid #eeeeea;
+}
+.bar-fill {
+height: 100%;
+border-radius: 5px;
+position: relative;
+}
+.bar-fill::after {
+content: ‘’;
+position: absolute;
+top: 0; left: 0; right: 0;
+height: 45%;
+background: rgba(255,255,255,0.25);
+border-radius: 5px 5px 0 0;
+}
+
+/* Footer */
+.footer {
+margin-top: 24px;
+padding-top: 18px;
+border-top: 1px solid #eee;
+display: flex;
+justify-content: space-between;
+align-items: flex-end;
+}
+.legend { display: flex; flex-direction: column; gap: 5px; }
+.legend-item { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #666; }
+.legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+.source-note {
+font-family: ‘DM Mono’, monospace;
+font-size: 9px;
+color: #bbb;
+text-align: right;
+line-height: 1.7;
+}
+</style>
+
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="label-top">📊 Sound Level Reference</div>
+    <div class="title">소음원과 <span>데시벨</span> 크기</div>
+    <div class="subtitle">일상 속 소음원의 음압 수준 비교 — 단위: dB(A)</div>
+  </div>
+
+  <!-- X axis -->
+
+  <div class="x-axis">
+    <div class="x-tick">0</div>
+    <div class="x-tick">20</div>
+    <div class="x-tick">40</div>
+    <div class="x-tick">60</div>
+    <div class="x-tick">80</div>
+    <div class="x-tick">100</div>
+    <div class="x-tick">120</div>
+    <div class="x-tick">140</div>
+  </div>
+
+  <div class="chart-wrapper">
+
+```
+<div class="grid-lines">
+  <div class="grid-line"></div>
+  <div class="grid-line"></div>
+  <div class="grid-line"></div>
+  <div class="grid-line"></div>
+  <div class="grid-line"></div>
+  <div class="grid-line"></div>
+  <div class="grid-line"></div>
+  <div class="grid-line"></div>
+</div>
+
+<!-- WHO 53dB line -->
+<div class="who-overlay" style="left: calc(185px + (53 / 140) * (100% - 185px));">
+  <div class="who-tag">WHO 권고 53dB</div>
+  <div class="who-line-v"></div>
+</div>
+
+<!-- SAFE -->
+<div class="section-divider zone-safe">
+  <div class="divider-label">🟢 안전 구간</div>
+  <div class="divider-line"></div>
+</div>
+
+<div class="row">
+  <div class="source">
+    <div class="source-text"><div class="source-name">나뭇잎 바람 소리</div><div class="source-db">~20 dB</div></div>
+    <div class="source-icon">🍃</div>
+  </div>
+  <div class="bar-track">
+    <div class="bar-fill" style="width:14.3%; background: linear-gradient(90deg, #a8ede8, #4ecdc4);"></div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="source">
+    <div class="source-text"><div class="source-name">도서관</div><div class="source-db">30~35 dB</div></div>
+    <div class="source-icon">📚</div>
+  </div>
+  <div class="bar-track">
+    <div class="bar-fill" style="width:23.2%; background: linear-gradient(90deg, #a8ede8, #4ecdc4);"></div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="source">
+    <div class="source-text"><div class="source-name">조용한 사무실</div><div class="source-db">40~50 dB</div></div>
+    <div class="source-icon">🏢</div>
+  </div>
+  <div class="bar-track">
+    <div class="bar-fill" style="width:32.1%; background: linear-gradient(90deg, #a8ede8, #4ecdc4);"></div>
+  </div>
+</div>
+
+<!-- CAUTION -->
+<div class="section-divider zone-caution">
+  <div class="divider-label">🟡 주의 구간</div>
+  <div class="divider-line"></div>
+</div>
+
+<div class="row">
+  <div class="source">
+    <div class="source-text"><div class="source-name">일반 대화</div><div class="source-db">55~65 dB</div></div>
+    <div class="source-icon">💬</div>
+  </div>
+  <div class="bar-track">
+    <div class="bar-fill" style="width:42.9%; background: linear-gradient(90deg, #fff0a0, #f5c800);"></div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="source">
+    <div class="source-text"><div class="source-name">사무실 소음</div><div class="source-db">60~70 dB</div></div>
+    <div class="source-icon">🖥️</div>
+  </div>
+  <div class="bar-track">
+    <div class="bar-fill" style="width:46.4%; background: linear-gradient(90deg, #fff0a0, #f5c800);"></div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="source">
+    <div class="source-text"><div class="source-name">시내버스 차내</div><div class="source-db">75~85 dB</div></div>
+    <div class="source-icon">🚌</div>
+  </div>
+  <div class="bar-track">
+    <div class="bar-fill" style="width:57.1%; background: linear-gradient(90deg, #ffe8a0, #ffaa00);"></div>
+  </div>
+</div>
+
+<!-- DANGER -->
+<div class="section-divider zone-danger">
+  <div class="divider-label">🔴 위험 구간 · 청력손상 시작</div>
+  <div class="divider-line"></div>
+</div>
+
+<div class="row">
+  <div class="source">
+    <div class="source-text"><div class="source-name">지하철 차내</div><div class="source-db">80~90 dB</div></div>
+    <div class="source-icon">🚇</div>
+  </div>
+  <div class="bar-track">
+    <div class="bar-fill" style="width:60.7%; background: linear-gradient(90deg, #ffd0b0, #ff6b35);"></div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="source">
+    <div class="source-text"><div class="source-name">지하철 승강장</div><div class="source-db">90~100 dB</div></div>
+    <div class="source-icon">⚠️</div>
+  </div>
+  <div class="bar-track">
+    <div class="bar-fill" style="width:67.9%; background: linear-gradient(90deg, #ffd0b0, #ff6b35);"></div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="source">
+    <div class="source-text"><div class="source-name">오토바이 · 공사장</div><div class="source-db">95~105 dB</div></div>
+    <div class="source-icon">🏗️</div>
+  </div>
+  <div class="bar-track">
+    <div class="bar-fill" style="width:71.4%; background: linear-gradient(90deg, #ffc0a0, #ff4500);"></div>
+  </div>
+</div>
+
+<!-- CRITICAL -->
+<div class="section-divider zone-critical">
+  <div class="divider-label">☠️ 극위험 · 즉각 손상</div>
+  <div class="divider-line"></div>
+</div>
+
+<div class="row">
+  <div class="source">
+    <div class="source-text"><div class="source-name">라이브 콘서트</div><div class="source-db">110~120 dB</div></div>
+    <div class="source-icon">🎸</div>
+  </div>
+  <div class="bar-track">
+    <div class="bar-fill" style="width:82.1%; background: linear-gradient(90deg, #ffb0c0, #e8003a);"></div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="source">
+    <div class="source-text"><div class="source-name">비행기 이륙 근거리</div><div class="source-db">120~130 dB</div></div>
+    <div class="source-icon">✈️</div>
+  </div>
+  <div class="bar-track">
+    <div class="bar-fill" style="width:89.3%; background: linear-gradient(90deg, #ffb0c0, #e8003a);"></div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="source">
+    <div class="source-text"><div class="source-name">총기 발사</div><div class="source-db">140~160 dB</div></div>
+    <div class="source-icon">💥</div>
+  </div>
+  <div class="bar-track">
+    <div class="bar-fill" style="width:100%; background: linear-gradient(90deg, #ff8899, #cc0022);"></div>
+  </div>
+</div>
+```
+
+  </div><!-- end chart-wrapper -->
+
+  <div class="footer">
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4;"></div><span>안전 구간 (~50 dB)</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f5c800;"></div><span>주의 구간 (50~80 dB)</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ff6b35;"></div><span>위험 구간 (80~110 dB) — 8시간 노출 한계: 85dB</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#e8003a;"></div><span>극위험 구간 (110 dB+) — 즉각적 청력 손상</span></div>
+    </div>
+    <div class="source-note">
+      ref. WHO Environmental Noise Guidelines<br>
+      한국 환경부 소음·진동 관리법<br>
+      NIOSH Occupational Noise Exposure
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
